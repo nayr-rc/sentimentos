@@ -1,6 +1,6 @@
 import streamlit as st
 from transformers import pipeline
-from typing import List
+from typing import List, Tuple
 
 MODEL_NAME = "distilbert-base-uncased-finetuned-sst-2-english"
 
@@ -9,7 +9,7 @@ def load_sentiment_pipeline(model_name: str = MODEL_NAME):
     return pipeline("sentiment-analysis", model=model_name)
 
 
-def analyze_text(text: str, classifier) -> list[dict[str, float]]:
+def analyze_text(text: str, classifier) -> List[dict]:
     texts = [line.strip() for line in text.splitlines() if line.strip()]
     if not texts:
         return []
@@ -20,7 +20,7 @@ def format_sentiment_label(label: str) -> str:
     return "Positivo" if label.lower().startswith("pos") else "Negativo" if label.lower().startswith("neg") else label
 
 
-def build_result_summary(results: list[dict[str, float]]) -> list[tuple[str, str, float]]:
+def build_result_summary(results: List[dict]) -> List[Tuple[str, str, float]]:
     return [
         (format_sentiment_label(item["label"]), item["label"], item["score"])
         for item in results
