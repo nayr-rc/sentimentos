@@ -36,12 +36,12 @@ def main() -> None:
     )
 
     st.markdown(
-        "<style>
+        """<style>
         .big-title { font-size: 42px; font-weight: 800; }
         .subtitle { color: #6c757d; margin-top: -12px; margin-bottom: 24px; }
         .stButton>button { background-color: #2563eb; color: white; border-radius: 10px; }
         .stTextArea textarea { min-height: 200px; }
-        </style>",
+        </style>""",
         unsafe_allow_html=True,
     )
 
