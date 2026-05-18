@@ -32,31 +32,62 @@ def main() -> None:
         page_title="Análise de Sentimento",
         page_icon="🧠",
         layout="centered",
+        initial_sidebar_state="expanded",
     )
 
-    st.title("Análise de Sentimento com Streamlit")
     st.markdown(
-        "Use este app para avaliar se um texto é positivo ou negativo usando um modelo pré-treinado do Hugging Face."
+        "<style>
+        .big-title { font-size: 42px; font-weight: 800; }
+        .subtitle { color: #6c757d; margin-top: -12px; margin-bottom: 24px; }
+        .stButton>button { background-color: #2563eb; color: white; border-radius: 10px; }
+        .stTextArea textarea { min-height: 200px; }
+        </style>",
+        unsafe_allow_html=True,
     )
 
-    st.sidebar.header("Configuração")
-    st.sidebar.write(f"Modelo: `{MODEL_NAME}`")
-    st.sidebar.write("Digite um ou mais textos na área principal e clique em \"Analisar\".")
+    header_col, _ = st.columns([4, 1])
+    with header_col:
+        st.markdown("<div class='big-title'>Análise de Sentimento</div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div class='subtitle'>Cole um texto ou várias frases abaixo para identificar sentimento positivo ou negativo imediatamente.</div>",
+            unsafe_allow_html=True,
+        )
+
+    st.divider()
+
+    st.sidebar.header("Sobre o app")
+    st.sidebar.write(
+        "Este app usa um modelo pré-treinado do Hugging Face para classificar textos em sentimento positivo ou negativo."
+    )
+    st.sidebar.write(f"**Modelo usado:** `{MODEL_NAME}`")
+
+    with st.sidebar.expander("Exemplos rápidos", expanded=True):
+        st.write("• Hoje foi um dia excelente e produtivo.")
+        st.write("• Estou muito frustrado com o serviço.")
+        st.write("• A experiência foi razoável, mas pode melhorar.")
+
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("Como usar")
+    st.sidebar.write(
+        "1. Cole o texto no campo principal.\n"
+        "2. Clique em **Analisar**.\n"
+        "3. Veja o resultado com confiança e gráficos."  # noqa: E501
+    )
 
     user_text = st.text_area(
-        "Texto para análise",
-        placeholder="Escreva aqui uma frase em português ou inglês...",
-        height=180,
+        "Digite aqui o texto para análise",
+        placeholder="Escreva uma frase ou cole várias linhas de texto...",
+        height=260,
     )
 
-    analyze_button = st.button("Analisar")
+    analyze_button = st.button("Analisar sentimento")
 
     if analyze_button:
         if not user_text.strip():
             st.warning("Por favor, insira um texto antes de clicar em Analisar.")
             return
 
-        with st.spinner("Carregando modelo e analisando..."):
+        with st.spinner("Carregando modelo e avaliando o sentimento..."):
             classifier = load_sentiment_pipeline()
             results = analyze_text(user_text, classifier)
 
@@ -66,26 +97,39 @@ def main() -> None:
 
         summary = build_result_summary(results)
 
+        positive_count = sum(1 for sentiment, _, _ in summary if sentiment == "Positivo")
+        negative_count = sum(1 for sentiment, _, _ in summary if sentiment == "Negativo")
+        average_confidence = sum(score for _, _, score in summary) / len(summary)
+
         st.success("Análise concluída com sucesso.")
 
-        for index, item in enumerate(summary, start=1):
-            sentiment, raw_label, score = item
-            st.markdown(f"**Texto {index}**")
-            st.write(f"- Resultado: **{sentiment}**")
-            st.write(f"- Rótulo do modelo: `{raw_label}`")
-            st.write(f"- Confiança: **{score:.2f}**")
-            if index < len(summary):
-                st.markdown("---")
+        metric_col1, metric_col2, metric_col3 = st.columns(3)
+        metric_col1.metric("Positivos", positive_count, delta=f"{positive_count} texto(s)")
+        metric_col2.metric("Negativos", negative_count, delta=f"{negative_count} texto(s)")
+        metric_col3.metric("Confiança média", f"{average_confidence:.0%}")
 
-        scores = [item[2] for item in summary]
-        st.bar_chart(scores)
+        table_data = [
+            {
+                "Texto": index,
+                "Sentimento": sentiment,
+                "Rótulo do modelo": raw_label,
+                "Confiança": f"{score:.2%}",
+            }
+            for index, (sentiment, raw_label, score) in enumerate(summary, start=1)
+        ]
 
-        st.write(
-            "O modelo usa `distilbert-base-uncased-finetuned-sst-2-english`, que funciona bem para frases curtas de sentimento geral."
+        st.markdown("### Resultados detalhados")
+        st.table(table_data)
+
+        st.markdown("### Confiança por texto")
+        st.bar_chart([score for _, _, score in summary])
+
+        st.info(
+            "O modelo usa `distilbert-base-uncased-finetuned-sst-2-english`, indicado para análise de sentimento em frases curtas."  # noqa: E501
         )
 
     st.markdown("---")
-    st.caption("Criado para implantação no Streamlit Cloud.")
+    st.caption("Feito para implantação rápida no Streamlit Cloud com interface moderna.")
 
 
 if __name__ == "__main__":
